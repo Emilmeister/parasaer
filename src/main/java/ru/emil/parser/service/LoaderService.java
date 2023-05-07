@@ -30,19 +30,9 @@ public class LoaderService {
 
     private final WhileListService whileListService;
 
-    private static final Pattern ChineseCharPatt = Pattern
-            .compile("[\u4e00-\u9fa5]");
-
-    public static boolean containChinese(String text) {
-        Matcher m = ChineseCharPatt.matcher(text);
-        if (m.find())
-            return true;
-        return false;
-    }
-
     @PostConstruct
     public void start() throws IOException {
-        LocalDate start = LocalDate.of(2023,4,30);
+        LocalDate start = LocalDate.of(2023,4,30).minusDays(30*9 - 1);
         LocalDate localDate = start;
         Set<LocalDate> dates = new HashSet<>();
         do {
@@ -155,37 +145,25 @@ public class LoaderService {
 
     public static void deleteHtml() {
         AtomicInteger integer = new AtomicInteger(0);
-        File dir = new File("C:\\models\\202304");
+        File dir = new File("C:\\models\\test");
         Arrays.stream(dir.listFiles()).parallel().forEach(photoset -> {
-
-            if (containChinese(photoset.getName())) {
+            Arrays.stream(photoset.listFiles()).forEach(photo -> {
+                FileInputStream fileInputStream = null;
                 try {
-                    FileUtils.deleteDirectory(photoset);
-                    log.info("chinise:" + photoset.getName());
-                } catch (IOException e) {
+                    fileInputStream = new FileInputStream(photo);
+                    String html = new String(fileInputStream.readNBytes(15), StandardCharsets.UTF_8);
+                    fileInputStream.close();
+                    if (html.contains("html")) {
+                        if (Files.deleteIfExists(photo.toPath())) integer.getAndIncrement();
+                    }
+                    if (integer.get() % 100 == 0) log.info(String.valueOf(integer.get()));
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
-            } else {
-                Arrays.stream(photoset.listFiles()).forEach(photo -> {
-                    FileInputStream fileInputStream = null;
-                    try {
-                        fileInputStream = new FileInputStream(photo);
-                        String html = new String(fileInputStream.readNBytes(15), StandardCharsets.UTF_8);
-                        fileInputStream.close();
-                        if (html.contains("html")) {
-                            if (Files.deleteIfExists(photo.toPath())) integer.getAndIncrement();
-                        }
-                        if (integer.get() % 100 == 0) log.info(String.valueOf(integer.get()));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
-                if (photoset.listFiles().length == 0) {
-                    if (photoset.delete()) log.info(photoset.getName());
-                }
+            });
+            if (photoset.listFiles().length == 0) {
+                if (photoset.delete()) log.info(photoset.getName());
             }
-
-
         });
     }
 }
