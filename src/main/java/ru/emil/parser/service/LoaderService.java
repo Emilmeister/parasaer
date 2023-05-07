@@ -4,18 +4,20 @@ import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,23 +25,34 @@ import java.util.regex.Pattern;
 @Slf4j
 public class LoaderService {
 
+    private static final Pattern ChineseCharPatt = Pattern
+            .compile("[\u4e00-\u9fa5]");
+
+    public static boolean containChinese(String text) {
+        Matcher m = ChineseCharPatt.matcher(text);
+        if (m.find())
+            return true;
+        return false;
+    }
+
     @PostConstruct
     public void start() throws IOException {
-        LocalDate start = LocalDate.of(2023,4,30);
-        LocalDate localDate = start.minusDays(1);
-        Set<LocalDate> dates = new HashSet<>();
-        do {
-            dates.add(localDate);
-            localDate = localDate.minusDays(1);
-        } while (localDate.isAfter(start.minusDays(1)));
-
-        dates.forEach(date -> {
-            try {
-                loadPage(date);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+//        LocalDate start = LocalDate.of(2023,4,28);
+//        LocalDate localDate = start;
+//        Set<LocalDate> dates = new HashSet<>();
+//        do {
+//            dates.add(localDate);
+//            localDate = localDate.minusDays(1);
+//        } while (localDate.isAfter(start.minusDays(28)));
+//
+//        dates.forEach(date -> {
+//            try {
+//                loadPage(date);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        });
+        deleteHtml();
     }
 
 
@@ -133,5 +146,42 @@ public class LoaderService {
             e.printStackTrace();
         }
 
+    }
+
+
+    public static void deleteHtml() {
+        AtomicInteger integer = new AtomicInteger(0);
+        File dir = new File("C:\\models\\202304");
+        Arrays.stream(dir.listFiles()).parallel().forEach(photoset -> {
+
+            if (containChinese(photoset.getName())) {
+                try {
+                    FileUtils.deleteDirectory(photoset);
+                    log.info("chinise:" + photoset.getName());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                Arrays.stream(photoset.listFiles()).forEach(photo -> {
+                    FileInputStream fileInputStream = null;
+                    try {
+                        fileInputStream = new FileInputStream(photo);
+                        String html = new String(fileInputStream.readNBytes(15), StandardCharsets.UTF_8);
+                        fileInputStream.close();
+                        if (html.contains("html")) {
+                            if (Files.deleteIfExists(photo.toPath())) integer.getAndIncrement();
+                        }
+                        if (integer.get() % 100 == 0) log.info(String.valueOf(integer.get()));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+                if (photoset.listFiles().length == 0) {
+                    if (photoset.delete()) log.info(photoset.getName());
+                }
+            }
+
+
+        });
     }
 }
