@@ -32,21 +32,22 @@ public class LoaderService {
 
     @PostConstruct
     public void start() throws IOException {
-        LocalDate start = LocalDate.of(2023,4,30).minusDays(30*9 - 1);
-        LocalDate localDate = start;
-        Set<LocalDate> dates = new HashSet<>();
-        do {
-            dates.add(localDate);
-            localDate = localDate.minusDays(1);
-        } while (localDate.isAfter(start.minusDays(30*3)));
-
-        dates.forEach(date -> {
-            try {
-                loadPage(date);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+//        LocalDate start = LocalDate.of(2023,4,30).minusDays(30*9 - 1);
+//        LocalDate localDate = start;
+//        Set<LocalDate> dates = new HashSet<>();
+//        do {
+//            dates.add(localDate);
+//            localDate = localDate.minusDays(1);
+//        } while (localDate.isAfter(start.minusDays(30*3)));
+//
+//        dates.forEach(date -> {
+//            try {
+//                loadPage(date);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        });
+        deleteHtml();
     }
 
 
@@ -146,24 +147,27 @@ public class LoaderService {
     public static void deleteHtml() {
         AtomicInteger integer = new AtomicInteger(0);
         File dir = new File("C:\\models\\test");
-        Arrays.stream(dir.listFiles()).parallel().forEach(photoset -> {
-            Arrays.stream(photoset.listFiles()).forEach(photo -> {
-                FileInputStream fileInputStream = null;
-                try {
-                    fileInputStream = new FileInputStream(photo);
-                    String html = new String(fileInputStream.readNBytes(15), StandardCharsets.UTF_8);
-                    fileInputStream.close();
-                    if (html.contains("html")) {
-                        if (Files.deleteIfExists(photo.toPath())) integer.getAndIncrement();
+        Arrays.stream(dir.listFiles()).parallel().forEach(model -> {
+            Arrays.stream(model.listFiles()).parallel().forEach(photoset -> {
+                Arrays.stream(photoset.listFiles()).forEach(photo -> {
+                    FileInputStream fileInputStream = null;
+                    try {
+                        fileInputStream = new FileInputStream(photo);
+                        String html = new String(fileInputStream.readNBytes(15), StandardCharsets.UTF_8);
+                        fileInputStream.close();
+                        if (html.contains("html")) {
+                            if (Files.deleteIfExists(photo.toPath())) integer.getAndIncrement();
+                        }
+                        if (integer.get() % 100 == 0) log.info(String.valueOf(integer.get()));
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                    if (integer.get() % 100 == 0) log.info(String.valueOf(integer.get()));
-                } catch (Exception e) {
-                    e.printStackTrace();
+                });
+                if (photoset.listFiles().length == 0) {
+                    if (photoset.delete()) log.info(photoset.getName());
                 }
             });
-            if (photoset.listFiles().length == 0) {
-                if (photoset.delete()) log.info(photoset.getName());
-            }
         });
+
     }
 }
