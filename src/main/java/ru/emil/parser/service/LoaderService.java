@@ -3,9 +3,11 @@ package ru.emil.parser.service;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
+import ru.emil.parser.model.MyPattern;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
@@ -23,7 +25,10 @@ import java.util.regex.Pattern;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class LoaderService {
+
+    private final WhileListService whileListService;
 
     private static final Pattern ChineseCharPatt = Pattern
             .compile("[\u4e00-\u9fa5]");
@@ -37,22 +42,21 @@ public class LoaderService {
 
     @PostConstruct
     public void start() throws IOException {
-//        LocalDate start = LocalDate.of(2023,4,28);
-//        LocalDate localDate = start;
-//        Set<LocalDate> dates = new HashSet<>();
-//        do {
-//            dates.add(localDate);
-//            localDate = localDate.minusDays(1);
-//        } while (localDate.isAfter(start.minusDays(28)));
-//
-//        dates.forEach(date -> {
-//            try {
-//                loadPage(date);
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        });
-        deleteHtml();
+        LocalDate start = LocalDate.of(2023,4,30);
+        LocalDate localDate = start;
+        Set<LocalDate> dates = new HashSet<>();
+        do {
+            dates.add(localDate);
+            localDate = localDate.minusDays(1);
+        } while (localDate.isAfter(start.minusDays(30*3)));
+
+        dates.forEach(date -> {
+            try {
+                loadPage(date);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
 
@@ -103,10 +107,10 @@ public class LoaderService {
                         .replace(">", "_")
                         .replace(":", "_");
                 try {
-                    //String groupName = url.split("/")[6];
-                    //String bebeNum = url.split("/")[5];
-                    //"C:\\models\\" + bebeNum + "\\" + dateStr + "\\" + groupName + "\\" + UUID.randomUUID().toString() +".jpg"
-                    downloadImage(url.replace("p=700", "p=2000"), "C:\\models\\" +dateStr+ "\\" + photoSet +"\\"+ UUID.randomUUID().toString() +".jpg");
+                    Optional<MyPattern> pattern = whileListService.isInWhiteList(photoSet);
+                    if (pattern.isPresent()) {
+                        downloadImage(url.replace("p=700", "p=2000"), "C:\\models\\test\\" + pattern.get().getTag() + "\\" + photoSet +"\\"+ UUID.randomUUID().toString() +".jpg");
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
