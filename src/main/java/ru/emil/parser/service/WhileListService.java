@@ -28,6 +28,9 @@ public class WhileListService {
 
     Optional<MyPattern> isInWhiteList(String photoset) {
         return listPatterns.stream().parallel().filter(myPattern -> myPattern.isContains(photoset)).findAny();
+    }
 
+    public Set<MyPattern> getListPatterns() {
+        return listPatterns;
     }
 }
