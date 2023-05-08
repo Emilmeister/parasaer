@@ -201,6 +201,9 @@ public class LoaderService {
 
 
     public static void downloadImage(String imageUrl, String savePath) throws IOException {
+        if (imageUrl.contains("static.porn-images-xxx.com")) {
+            return;
+        }
         try {
             OkHttpClient client = new OkHttpClient();
             client.setConnectTimeout(1, TimeUnit.MINUTES);
