@@ -44,14 +44,14 @@ public class LoaderService {
 
     @PostConstruct
     public void start() throws IOException {
-        whileListService.getListPatterns().forEach(myPattern -> {
-            try {
-                downloadPhotosetsByName(myPattern.getTag());
-                log.info("закончил " + myPattern.getTag());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+//        whileListService.getListPatterns().forEach(myPattern -> {
+//            try {
+//                downloadPhotosetsByName(myPattern.getTag());
+//                log.info("закончил " + myPattern.getTag());
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        });
 
 //        LocalDate start = LocalDate.of(2023,4,30);
 //        LocalDate localDate = start;
@@ -68,7 +68,7 @@ public class LoaderService {
 //                e.printStackTrace();
 //            }
 //        });
-//        deleteHtml();
+        deleteHtml();
     }
 
 
@@ -238,7 +238,14 @@ public class LoaderService {
 
 
     public static void deleteHtml() {
-        AtomicInteger integer = new AtomicInteger(0);
+        AtomicInteger integer = new AtomicInteger(1);
+        List<AtomicInteger> dirphotosCount = new ArrayList<>();
+
+        for (int i = 0; i < 100; i++) {
+            dirphotosCount.add(new AtomicInteger(0));
+        }
+
+
         File dir = new File(basePath);
         Arrays.stream(dir.listFiles()).parallel().forEach(model -> {
             Arrays.stream(model.listFiles()).parallel().forEach(photoset -> {
@@ -256,11 +263,21 @@ public class LoaderService {
                         e.printStackTrace();
                     }
                 });
-                if (photoset.listFiles().length == 0) {
-                    if (photoset.delete()) log.info(photoset.getName());
+                if (photoset.listFiles().length < 100) dirphotosCount.get(photoset.listFiles().length).getAndIncrement();
+                if (photoset.listFiles().length <= 3 || photoset.getName().contains("insta") || photoset.getName().contains("twitter")) {
+                    try {
+                        FileUtils.deleteDirectory(photoset);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             });
         });
+
+
+        for (int i = 0; i < dirphotosCount.size(); i++) {
+            log.info(i + " - " + dirphotosCount.get(i));
+        }
 
     }
 }
