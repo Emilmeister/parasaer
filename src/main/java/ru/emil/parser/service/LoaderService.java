@@ -37,7 +37,7 @@ public class LoaderService {
     private static String basePath = "C:\\models\\test2\\";
 
     public LoaderService() {
-        client.setConnectTimeout(1, TimeUnit.MINUTES);
+        client.setConnectTimeout(7, TimeUnit.SECONDS);
         client.setReadTimeout(1, TimeUnit.MINUTES);
         client.setWriteTimeout(1, TimeUnit.MINUTES);
     }
